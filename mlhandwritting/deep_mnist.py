@@ -6,11 +6,10 @@ mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 
 sess = tf.InteractiveSession()
 
-x = tf.placeholder(tf.float32, shape=[None, 784])
-y_ = tf.placeholder(tf.float32, shape=[None, 10])
+#shape=[None, 28*28] specifies a matrix with a variable size in width, and 28*28=784 in height
+x = tf.placeholder(tf.float32, shape=[None, 28*28])
 
-W = tf.Variable(tf.zeros([784,10]))
-b = tf.Variable(tf.zeros([10]))
+y_ = tf.placeholder(tf.float32, shape=[None, 10])
 
 
 def weight_variable(shape):
@@ -32,25 +31,43 @@ def max_pool_2x2(x):
                         strides=[1, 2, 2, 1], padding='SAME')
 
 
+#Filter parameters for convolution
 W_conv1 = weight_variable([5, 5, 1, 32])
+#Filter is 5x5, 1 is the number of input channels (black and white so just 1),
+#  and 32 is the number of output channels (ReLU neurons)
+
+#Our bias variable has the same number of entries as the output channels (32)
 b_conv1 = bias_variable([32])
 
+#Flatten the 28*28 image to a tensor of [-1,28,28,1] => [batch, height, width, input_channels]
+#-1 specifies that the tensor will preserve its original size by resizing that dimension
 x_image = tf.reshape(x, [-1,28,28,1])
 
-h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
+#We run a convolution layer on the x_image using the W, b parameters
+convolution1 = conv2d(x_image, W_conv1) + b_conv1
+#We pass the convolution through a ReLU layer with input size [32]
+h_conv1 = tf.nn.relu(convolution1)
+#ReLU neurons take their inputs and perform f(x)=max(0,x) on them
+
+#We max pool the result 2x2
 h_pool1 = max_pool_2x2(h_conv1)
 
+#<THE UUGE>
 W_conv2 = weight_variable([5, 5, 32, 64])
 b_conv2 = bias_variable([64])
 
 h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
 h_pool2 = max_pool_2x2(h_conv2)
+#</THE UUGE>
 
+#We define our weights as such. The input volume is 7*7(image size after 2 max pools) * 64 (output size of last layer)
+#1024 is our selected number of neurons, so we use it as the height of W and height of B
 W_fc1 = weight_variable([7 * 7 * 64, 1024])
-b_fc1 = bias_variable([1024])
+B_fc1 = bias_variable([1024])
 
+#the flattened matrix becomes [-1, 7*7*64] => [batch, pixels]
 h_pool2_flat = tf.reshape(h_pool2, [-1, 7*7*64])
-h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
+h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + B_fc1)
 
 keep_prob = tf.placeholder(tf.float32)
 h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
@@ -58,6 +75,7 @@ h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 W_fc2 = weight_variable([1024, 10])
 b_fc2 = bias_variable([10])
 
+#good ole softmax and cross entropy
 y_conv=tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
 
 cross_entropy = -tf.reduce_sum(y_*tf.log(y_conv))
