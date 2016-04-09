@@ -123,15 +123,15 @@ def inference(images):
 
     normalized2 = tf.nn.local_response_normalization(input=conv2_pooled)
 
-    with tf.variable_scope('fully connected 1') as scope:
+    with tf.variable_scope('fully_connected_1') as scope:
 
-        # FIRST fully connected layer (Image size is 8*8 after 2 max poolings
+        # FIRST fully connected layer (Image size is 6*6 after 2 max poolings
         # Connecting all the feature maps of the 2nd conv layer to 512 neurons
-        w_fc1 = weight_variable_with_decay('weights', shape=[8 * 8 * 128, 512], stddev=0.04, wd=0.004)
+        w_fc1 = weight_variable_with_decay('weights', shape=[6 * 6 * 64, 512], stddev=0.04, wd=0.004)
         b_fc1 = bias_variable('biases', [512])
 
-        # flatten the output of the layers to a vector of 8*8*128 with a batch dimension
-        flattened = tf.reshape(normalized2, [FLAGS.batch_size, 8 * 8 * 128])
+        # flatten the output of the layers to a vector of 6*6*128 with a batch dimension
+        flattened = tf.reshape(normalized2, [FLAGS.batch_size, 6 * 6 * 64])
         # result is a tensor of [batch, 1024]
 
         # left multiply flattened to the weights so that the batch dimension is left untouched...
@@ -139,7 +139,7 @@ def inference(images):
         fc1_activated = tf.nn.relu(fc1_output, name=scope.name)
         activation_summary(fc1_activated)
 
-    with tf.variable_scope('fully connected 2') as scope:
+    with tf.variable_scope('fully_connected_2') as scope:
 
         # This layer goes from 512 down to 256
         w_fc2 = weight_variable_with_decay('weights', shape=[512, 256], stddev=0.04, wd=0.004)
@@ -149,7 +149,7 @@ def inference(images):
         fc2_activated = tf.nn.relu(fc2_output, name=scope.name)
         activation_summary(fc2_activated)
 
-    with tf.variable_scope('fully connected 3') as scope:
+    with tf.variable_scope('fully_connected_3') as scope:
 
         # This layer goes from 256 down to 128
         w_fc3 = weight_variable_with_decay('weights', shape=[256, 128], stddev=0.04, wd=0.004)
@@ -159,7 +159,7 @@ def inference(images):
         fc3_activated = tf.nn.relu(fc3_output, name=scope.name)
         activation_summary(fc3_activated)
 
-    with tf.variable_scope('softmax linear') as scope:
+    with tf.variable_scope('softmax_linear') as scope:
 
         # Final layer takes us from 128 to #Of classes
 
@@ -236,8 +236,7 @@ def train(total_loss, global_step):
         tf.histogram_summary(var.op.name, var)
 
     for grad, var in grads:
-        if grad:
-            tf.histogram_summary(var.op.name + '/gradients', grad)
+        tf.histogram_summary(var.op.name + '/gradients', grad)
 
     # Track the moving averages of all trainable variables
     variable_averages = tf.train.ExponentialMovingAverage(
